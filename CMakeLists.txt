@@ -19,5 +19,6 @@ include_subdirectory(src)
 target_compile_definitions(ConformalEQ PUBLIC
     JUCE_VST3_CAN_REPLACE_VST2=0
 )
+
 target_link_libraries(ConformalEQ PRIVATE 
 		juce_plugin_modules)

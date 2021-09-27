@@ -1,0 +1,6 @@
+target_sources(ConformalEQ PRIVATE
+	ConformalEQ.cpp
+
+)
+
+target_precompile_headers(ConformalEQ PRIVATE pch.h)

@@ -20,7 +20,7 @@ target_compile_definitions(juce_plugin_modules
         JUCE_REPORT_APP_USAGE=0
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
-        JucePlugin_Manufacturer="chowdsp"
+        JucePlugin_Manufacturer="css"
         JucePlugin_VersionString="${CMAKE_PROJECT_VERSION}"
         JucePlugin_Name="${CMAKE_PROJECT_NAME}"
         FOLEYS_SHOW_GUI_EDITOR_PALLETTE=0

@@ -14,7 +14,6 @@ juce_add_plugin(ConformalEQ
 juce_generate_juce_header(ConformalEQ)
 
 add_subdirectory(src)
-include_subdirectory(src)
 
 target_compile_definitions(ConformalEQ PUBLIC
     JUCE_VST3_CAN_REPLACE_VST2=0

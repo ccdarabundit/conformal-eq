@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 project(ConformalEQ VERSION 0.9)
 
 set(CMAKE_CXX_STANDARD 17)
+set( CMAKE_CXX_FLAGS "-std=c++0x")
 add_subdirectory(modules)
 
 juce_add_plugin(ConformalEQ

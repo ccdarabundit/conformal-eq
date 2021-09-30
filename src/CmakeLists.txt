@@ -1,6 +1,19 @@
 target_sources(ConformalEQ PRIVATE
 	ConformalEQ.cpp
-
+	
+	# GUI Includes
+	gui/champLAF.cpp
+	gui/FilterPlot.h
+	gui/Figure.h
+	# DSP Includes
+	dsp/sos.h
 )
 
 target_precompile_headers(ConformalEQ PRIVATE pch.h)
+
+juce_add_binary_data(BinaryData SOURCES
+	gui/assets/knob_white.svg
+	gui/assets/Sarabun-Light.ttf
+	gui/assets/Sarabun-Regular.ttf
+	gui/assets/gui.xml
+)

@@ -1,7 +1,7 @@
 // Conformal EQ - Champ Darabundit 09/27/21
 
 #include "ConformalEQ.h"
-
+#include "gui/Figure.h"
 namespace IDs
 {
 static juce::String filterQ {"filterQ"};
@@ -53,10 +53,7 @@ treeState (*this, nullptr, JucePlugin_Name, createParameterLayout())
     treeState.addParameterListener(IDs::filterFreq, this);
     treeState.addParameterListener(IDs::filterQ, this);
     
-    filterPlot = magicState.createAndAddObject<FilterPlot>(IDs::filterPlot);
-    filterPlotZ = magicState.createAndAddObject<FilterPlot>(IDs::filterPlotZ);
     magicState.setGuiValueTree( BinaryData::gui_xml, BinaryData::gui_xmlSize);
-    
 }
 
 void ConformalEQ::parameterChanged(const String &parameterID, float newValue)
@@ -64,13 +61,17 @@ void ConformalEQ::parameterChanged(const String &parameterID, float newValue)
 
 void ConformalEQ::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
+    filterPlot->prepareToPlay(sampleRate,samplesPerBlock);
+    
     magicState.prepareToPlay(sampleRate, samplesPerBlock);
     double tmp[6] = {3.947841760435743e7, 0.0, 0.0, 3.947841760435743e7, 8.885765876316731e3, 1.0};
     auto c = new coefs<double>(tmp);
     filter.setAnalogCoefs( c, 0);
     filter.set_fs(sampleRate);
-    filterPlot->freqs(&filter);
-    filterPlotZ->freqz(&filter);
+    filter.bilinear();
+    // attach the filter
+    filterPlot->freqs(&filter, 0);
+    filterPlot->freqz(&filter, 1);
 }
 
 void ConformalEQ::releaseResources()
@@ -81,6 +82,16 @@ void ConformalEQ::processBlock(AudioBuffer<float> &buffer, MidiBuffer &midiMessa
 
 void ConformalEQ::processAudioBlock(AudioBuffer<float>& buffer)
 {}
+
+AudioProcessorEditor *     ConformalEQ::createEditor ()
+{
+    auto builder = std::make_unique<foleys::MagicGUIBuilder>(magicState);
+    builder->registerJUCEFactories();
+    builder->registerLookAndFeel("champLAF", std::make_unique<champLAF>());
+    builder->registerFactory("Figure", &FigureItem::factory);
+    auto editor = new foleys::MagicPluginEditor (magicState, std::move (builder));
+    return editor;
+}
 
 AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {

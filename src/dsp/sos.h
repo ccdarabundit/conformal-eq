@@ -24,6 +24,12 @@ struct coefs{
         a2 = a2/a0;
         a0 = static_cast<T>(1.0);
     }
+    
+    void set(T* c)
+    {
+        b0 = c[0]; b1 = c[1]; b2 = c[2];
+        a0 = c[3]; a1 = c[4]; a2 = c[5];
+    }
 };
 
 // BIQUAD TEMPLATE - Base for SOS
@@ -81,7 +87,7 @@ public:
         a1z = 2*(ac.a0 - c*c*ac.a2);
         a2z = ac.a0 + c*ac.a1 + c*c*ac.a2;
         T tmp[6] = {b0z, b1z, b2z, a0z, a1z, a2z};
-        dc = new coefs<T> (tmp);
+        dc.set(tmp);
         dc.norm();
     }
     

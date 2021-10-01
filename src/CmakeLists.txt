@@ -4,7 +4,7 @@ target_sources(ConformalEQ PRIVATE
 	# GUI Includes
 	gui/champLAF.cpp
 	gui/FilterPlot.h
-	gui/Figure.h
+	gui/Figure.cpp
 	# DSP Includes
 	dsp/sos.h
 )

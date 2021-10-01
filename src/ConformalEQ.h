@@ -18,7 +18,7 @@ public:
 	void prepareToPlay (double sampleRate, int samplesPerBlock) override;
 	void releaseResources() override;
     void processAudioBlock (AudioBuffer<float>& buffer);
-    void processBlock ( AudioBuffer<float>&buffer, MidiBuffer &midiMessages);
+    void processBlock ( AudioBuffer<float>&buffer, MidiBuffer &midiMessages) override;
     
     // Decay control
     double getTailLengthSeconds () const override           { return 0.0;       }
@@ -40,25 +40,24 @@ public:
                                                             {                   }
     
     // PGM/Editor Functions
-    AudioProcessorEditor * 	createEditor () override {
-    	auto builder = std::make_unique<foleys::MagicGUIBuilder>(magicState);
-    	builder->registerJUCEFactories();
-    	builder->registerLookAndFeel("champLAF", std::make_unique<champLAF>());
-    	auto editor = new foleys::MagicPluginEditor (magicState, std::move (builder));
-    	return editor;
-    }
+    AudioProcessorEditor * 	createEditor () override;
     bool hasEditor () const override                        { return true;       }
     void parameterChanged (const String& parameterID, float newValue) override;
     static void addParameters (juce::AudioProcessorValueTreeState::Parameter& params);
     const String getName() const override           { return "Conformal EQ"; }
+    
+    FilterPlot* getFilterPlot()
+    {
+        return filterPlot;
+    }
+    
 private: 
 	AudioBuffer<float> monoBuffer;
     // PGM/Editor variables
     juce::AudioProcessorValueTreeState treeState;
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     foleys::MagicProcessorState magicState { *this };
-    FilterPlot* filterPlot = nullptr;
-    FilterPlot* filterPlotZ = nullptr;
+    FilterPlot* filterPlot = new FilterPlot();
     // Filter variables
     sos<double, 1> filter;
     std::atomic<float>* frequency = nullptr;

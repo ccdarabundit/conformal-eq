@@ -4,7 +4,7 @@
 
 #include <JuceHeader.h>
 #include "gui/champLAF.h"
-#include "dsp/sos.h"
+#include "dsp/FilterDesign.h"
 #include "gui/FilterPlot.h"
 
 class ConformalEQ : public foleys::MagicProcessor,
@@ -53,13 +53,15 @@ public:
     
 private: 
 	AudioBuffer<float> monoBuffer;
+    juce::Random random;
+    std::atomic<float>* filterType = nullptr;
     // PGM/Editor variables
     juce::AudioProcessorValueTreeState treeState;
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     foleys::MagicProcessorState magicState { *this };
     FilterPlot* filterPlot = new FilterPlot();
     // Filter variables
-    sos<double, 1> filter;
+    FilterDesign filter;
     std::atomic<float>* frequency = nullptr;
     std::atomic<float>* Q = nullptr;
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ConformalEQ)

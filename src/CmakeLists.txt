@@ -7,6 +7,7 @@ target_sources(ConformalEQ PRIVATE
 	gui/Figure.cpp
 	# DSP Includes
 	dsp/sos.h
+	dsp/FilterDesign.cpp
 )
 
 target_precompile_headers(ConformalEQ PRIVATE pch.h)

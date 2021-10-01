@@ -49,39 +49,71 @@ treeState (*this, nullptr, JucePlugin_Name, createParameterLayout())
     jassert( frequency != nullptr);
     Q = treeState.getRawParameterValue(IDs::filterQ);
     jassert( Q != nullptr);
+    filterType = treeState.getRawParameterValue(IDs::filterType);
+    jassert( filterType != nullptr);
     
     treeState.addParameterListener(IDs::filterFreq, this);
     treeState.addParameterListener(IDs::filterQ, this);
-    
+    treeState.addParameterListener(IDs::filterType, this);
     magicState.setGuiValueTree( BinaryData::gui_xml, BinaryData::gui_xmlSize);
 }
 
 void ConformalEQ::parameterChanged(const String &parameterID, float newValue)
-{}
+{
+    if (parameterID == IDs::filterQ)
+        filter.setQ(newValue);
+    else if(parameterID == IDs::filterFreq)
+        filter.setFreq(newValue);
+    else if(parameterID == IDs::filterType)
+    {
+        // Convert range to filter type
+        FilterType newType = static_cast<FilterType>(static_cast<int>(newValue));
+        filter.setType(newType);
+    }
+    
+    // Replot
+    filterPlot->freqs(filter.getSystem(), 0);
+    filterPlot->freqz(filter.getSystem(), 1);
+}
 
 void ConformalEQ::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     filterPlot->prepareToPlay(sampleRate,samplesPerBlock);
     
     magicState.prepareToPlay(sampleRate, samplesPerBlock);
-    double tmp[6] = {3.947841760435743e7, 0.0, 0.0, 3.947841760435743e7, 8.885765876316731e3, 1.0};
-    auto c = new coefs<double>(tmp);
-    filter.setAnalogCoefs( c, 0);
-    filter.set_fs(sampleRate);
-    filter.bilinear();
+    
+    filter.prepareToPlay(sampleRate);
     // attach the filter
-    filterPlot->freqs(&filter, 0);
-    filterPlot->freqz(&filter, 1);
+    filterPlot->freqs(filter.getSystem(), 0);
+    filterPlot->freqz(filter.getSystem(), 1);
 }
 
 void ConformalEQ::releaseResources()
 {}
 
 void ConformalEQ::processBlock(AudioBuffer<float> &buffer, MidiBuffer &midiMessages)
-{}
+{ processAudioBlock(buffer);}
 
 void ConformalEQ::processAudioBlock(AudioBuffer<float>& buffer)
-{}
+{
+    const auto numChannels = buffer.getNumChannels();
+    const auto numSamples = buffer.getNumSamples();
+    // sum input to mono
+    monoBuffer.setSize (1, numSamples, false, false, true);
+    monoBuffer.clear();
+
+    for (int samp = 0; samp < numSamples; ++samp)
+    {
+        double wnoise = random.nextFloat()*.25 - .125;
+        float output = filter.getSystem()->process(wnoise);
+        monoBuffer.setSample(0, samp, output);
+    }
+    // copy back to stereo (or however many channels)
+        for (int ch = 0; ch < numChannels; ++ch)
+            FloatVectorOperations::copy (buffer.getWritePointer (ch),
+                                         monoBuffer.getReadPointer (0),
+                                         numSamples);
+}
 
 AudioProcessorEditor *     ConformalEQ::createEditor ()
 {

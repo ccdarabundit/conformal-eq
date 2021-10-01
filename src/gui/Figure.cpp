@@ -43,6 +43,8 @@ Figure::Figure(FilterPlot* fp)
     auto f = fp->get_frequencies();
     frequencies.resize(f.size());
     frequencies = f;
+    
+    startTimerHz (25);
 }
 
 void Figure::resized()

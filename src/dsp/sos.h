@@ -38,7 +38,7 @@ class biquad
 {
 public:
     biquad()
-    {}
+    {reset_dsp();}
     ~biquad()
     {}
     
@@ -80,13 +80,13 @@ public:
         // b0*(z^-2 + 2z^-1 + 1)
         // c*b1*(z^-2 - 1)
         // c*c*b2*(z^-2 - 2z^-1 + 1)
-        b0z = ac.b0 + c*c*ac.b2 - c*ac.b1;
+        b0z = ac.b0 + c*c*ac.b2 + c*ac.b1;
         b1z = 2*(ac.b0 - c*c*ac.b2);
-        b2z = ac.b0 + c*ac.b1 + c*c*ac.b2;
-        a0z = ac.a0 + c*c*ac.a2 - c*ac.a1;
+        b2z = ac.b0 - c*ac.b1 + c*c*ac.b2;
+        a0z = ac.a0 + c*c*ac.a2 + c*ac.a1;
         a1z = 2*(ac.a0 - c*c*ac.a2);
-        a2z = ac.a0 + c*ac.a1 + c*c*ac.a2;
-        T tmp[6] = {b0z, b1z, b2z, a0z, a1z, a2z};
+        a2z = ac.a0 - c*ac.a1 + c*c*ac.a2;
+        T tmp[6] = {b0z/a0z, b1z/a0z, b2z/a0z, 1.0, a1z/a0z, a2z/a0z};
         dc.set(tmp);
         dc.norm();
     }
@@ -116,14 +116,14 @@ private:
     coefs<T> dc; // Digital coefs
 };
 
-template <typename T, int numSections>
+template <typename T, int maxNumSections>
 class sos{
 public:
     using fiter = typename std::vector<biquad<T>>::iterator;
     using citer = typename std::vector<coefs<T>>::iterator;
     sos()
     {
-        N = numSections;
+        N = 0;
         T c[6] = {1.f, 0.f, 0.f, 1.f, 0.f, 0.f};
         coefs<T> tmp(c);
         for (int i = 0; i < N; ++i)
@@ -139,7 +139,13 @@ public:
     }
     
     ~sos() {}
-    
+    void reset_dsp()
+    {
+        for (fiter it = start; it != stop; ++it)
+        {
+            it->reset_dsp();
+        }
+    }
     void set_fs(float newfs)
     {
         fs = newfs;
@@ -187,25 +193,39 @@ public:
             it->bilinear();
     }
     
-    void setAnalogCoefs(coefs<T>* newCoefs, int sec)
+    void setAnalogSectionCoefs(coefs<T>* newCoefs, int sec)
     {
         filters[sec].setAnalogCoefs(*newCoefs);
     }
     
-    void setDigitalCoefs(coefs<T>* newCoefs, int sec)
+    void setDigitalSectionCoefs(coefs<T>* newCoefs, int sec)
     {
         filters[sec].setDigitalCoefs(*newCoefs);
     }
     
-//    // This asks you to set shape the coefs correctly
-//    void setAnalogCoefs(citer startCoefs, citer stopCoefs)
-//    {
-//        fiter fIt = start;
-//        for (citer cIt = startCoefs; cIt != stopCoefs; cIt++, fIt++)
-//        {
-//            fIt->setAnalogCoefs(*cIt);
-//        }
-//    }
+    // This asks you to set shape the coefs correctly
+    void setAnalogCoefs(citer startCoefs, citer stopCoefs)
+    {
+        int nSecs = std::distance(startCoefs, stopCoefs);
+        if (filters.size() < nSecs)
+        {
+            filters.resize(nSecs);
+            N = nSecs;
+            start = filters.begin();
+            stop = filters.end();
+        }
+        else
+        {
+            N = nSecs; // No resizing we just don't process
+            stop = std::next(start, N);
+        }
+        fiter fIt = start;
+        
+        for (citer cIt = startCoefs; cIt != stopCoefs; cIt++, fIt++)
+        {
+            fIt->setAnalogCoefs(*cIt);
+        }
+    }
     
     // Resize number of second order sections. Doesn't reallocate
     void resize(int newNSecs)
@@ -222,6 +242,7 @@ public:
         for (fiter it = start; it != stop; it++)
             it->set_fs(fs);
     }
+    
 private:
     int N;
     double fs = 0.0;

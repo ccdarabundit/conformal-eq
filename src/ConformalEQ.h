@@ -64,5 +64,8 @@ private:
     FilterDesign filter;
     std::atomic<float>* frequency = nullptr;
     std::atomic<float>* Q = nullptr;
+    std::atomic<float>* noiseParam = nullptr;
+    bool noiseSwitch = 1;
+    double fs = 0;
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ConformalEQ)
 };

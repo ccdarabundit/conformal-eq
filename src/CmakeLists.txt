@@ -6,8 +6,10 @@ target_sources(ConformalEQ PRIVATE
 	gui/FilterPlot.h
 	gui/Figure.cpp
 	# DSP Includes
+	dsp/coefs.h
 	dsp/sos.h
 	dsp/FilterDesign.cpp
+	dsp/SpectralDiscretize.h
 )
 
 target_precompile_headers(ConformalEQ PRIVATE pch.h)

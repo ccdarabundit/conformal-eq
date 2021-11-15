@@ -3,34 +3,10 @@
 #ifndef sos_h
 #define sos_h
 
-#include <Eigen/Dense>
+#include <limits>
 
-template <typename T>
-struct coefs{
-    T b0, b1, b2, a0, a1, a2;
-    coefs() {}
-    coefs(T* c)
-    {
-        b0 = c[0]; b1 = c[1]; b2 = c[2];
-        a0 = c[3]; a1 = c[4]; a2 = c[5];
-    }
-    
-    // Normalize coefs so a0 = 1
-    void norm(){
-        b0 = b0/a0;
-        b1 = b1/a0;
-        b2 = b2/a0;
-        a1 = a1/a0;
-        a2 = a2/a0;
-        a0 = static_cast<T>(1.0);
-    }
-    
-    void set(T* c)
-    {
-        b0 = c[0]; b1 = c[1]; b2 = c[2];
-        a0 = c[3]; a1 = c[4]; a2 = c[5];
-    }
-};
+#include "coefs.h"
+#include "SpectralDiscretize.h"
 
 // BIQUAD TEMPLATE - Base for SOS
 template <typename T>
@@ -45,6 +21,7 @@ public:
     void set_fs(double newfs)
     {
         fs = newfs;
+//        digitizer.prepareToPlay(fs);
     }
     // Process DF2T
     float process(float input)
@@ -100,15 +77,30 @@ public:
         return std::abs(num/den);
     }
     
+    // Compute digital response at f
     float freqz(T f)
     {
+        if (f > 0.5*fs) // Don't plot above Nyquist
+            return NAN;
+        else
+        {
         std::complex<T> j(0, 1);
         std::complex<T> z = std::exp( -j * 2.0*M_PI*(f/fs));
         auto num = dc.b0 + dc.b1*z + dc.b2*z*z;
         auto den = dc.a0 + dc.a1*z + dc.a2*z*z;
         return std::abs(num/den);
+        }
     }
     
+    coefs<T> * getAnalogPtr()
+    {
+        return &ac;
+    }
+    
+    coefs<T> * getDigitalPtr()
+    {
+        return &dc;
+    }
 private:
     double fs = 0.0;
     T state[2];
@@ -193,6 +185,18 @@ public:
             it->bilinear();
     }
     
+    void sd()
+    {
+        for (fiter it = start; it != stop; ++it)
+        {
+            biquad<T> * tmp = new biquad<T>();
+            *tmp = *it;
+            digitizer.discretize(tmp->getAnalogPtr());
+            tmp->bilinear();
+            it->setDigitalCoefs(*tmp->getDigitalPtr());
+        }
+    }
+    
     void setAnalogSectionCoefs(coefs<T>* newCoefs, int sec)
     {
         filters[sec].setAnalogCoefs(*newCoefs);
@@ -226,7 +230,7 @@ public:
             fIt->setAnalogCoefs(*cIt);
         }
     }
-    
+
     // Resize number of second order sections. Doesn't reallocate
     void resize(int newNSecs)
     {
@@ -239,15 +243,50 @@ public:
     void set_fs(double newfs)
     {
         fs = newfs;
+        digitizer.set_fs(newfs);
         for (fiter it = start; it != stop; it++)
             it->set_fs(fs);
+        calc_warp();
+    }
+    
+    void set_warp(double newf0)
+    {
+        f0 = newf0;
+        double beta, g;
+        if (newf0 >= 0.5*fs)
+            g = 2.333; // Optimized g
+        else
+        {
+            beta = newf0;
+            double bnorm = 2*beta/fs;
+            double bh = (2 * fs * std::tan( M_PI*beta/fs ))/(M_PI*fs);
+            g = 2.0*bh*std::sqrt(1 - bnorm*bnorm) /bnorm;
+        }
+        digitizer.setG( g );
+    }
+    
+    void calc_warp()
+    {
+        double beta, g;
+        if (f0 >= 0.5*fs)
+            g = 2.333; // Optimized g
+        else
+        {
+            beta = f0;
+            double bnorm = 2*beta/fs;
+            double bh = (2 * fs * std::tan( M_PI*beta/fs ))/(M_PI*fs);
+            g = 2.0*bh*std::sqrt(1 - bnorm*bnorm) /bnorm;
+        }
+        digitizer.setG( g );
     }
     
 private:
     int N;
-    double fs = 0.0;
+    double fs = 1.0;
+    double f0 = 0.0;
     std::vector<biquad<T>> filters;
     fiter start;
     fiter stop;
+    SpectralDiscretize<T, 2> digitizer;
 };
 #endif /* sos_h */
